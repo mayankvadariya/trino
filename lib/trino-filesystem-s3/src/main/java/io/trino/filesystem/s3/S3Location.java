@@ -16,16 +16,19 @@ package io.trino.filesystem.s3;
 import io.trino.filesystem.Location;
 
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 
 record S3Location(Location location)
 {
+    private static final Pattern SLASHES = Pattern.compile("/+");
+
     S3Location
     {
-        requireNonNull(location, "location is null");
         checkArgument(location.scheme().isPresent(), "No scheme for S3 location: %s", location);
+        location = requireNonNull(getHadoopFsCompatibleLocation(location), "location is null");
         checkArgument(Set.of("s3", "s3a", "s3n").contains(location.scheme().get()), "Wrong scheme for S3 location: %s", location);
         checkArgument(location.host().isPresent(), "No bucket for S3 location: %s", location);
         checkArgument(location.userInfo().isEmpty(), "S3 location contains user info: %s", location);
@@ -56,5 +59,15 @@ record S3Location(Location location)
     public Location baseLocation()
     {
         return Location.of("%s://%s/".formatted(scheme(), bucket()));
+    }
+
+    // Required as HadoopFs normalizes path for s3a/s3n scheme but revives path for s3 schemes https://github.com/trinodb/trino/blob/0c5b0cf613e631fc59758acfeb813596b96facfe/lib/trino-hdfs/src/main/java/io/trino/filesystem/hdfs/HadoopPaths.java#L27-L36
+    private static Location getHadoopFsCompatibleLocation(Location location)
+    {
+        if ("s3a".equals(location.scheme().orElseThrow()) || "s3n".equals(location.scheme().orElseThrow())) {
+            String path = SLASHES.matcher(location.path()).replaceAll("/");
+            return Location.of("%s://%s/%s".formatted(location.scheme().orElseThrow(), location.host().orElseThrow(), path));
+        }
+        return location;
     }
 }
