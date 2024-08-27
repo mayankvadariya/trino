@@ -64,10 +64,10 @@ record S3Location(Location location)
     // Required as HadoopFs normalizes path for s3a/s3n scheme but revives path for s3 schemes https://github.com/trinodb/trino/blob/0c5b0cf613e631fc59758acfeb813596b96facfe/lib/trino-hdfs/src/main/java/io/trino/filesystem/hdfs/HadoopPaths.java#L27-L36
     private static Location getHadoopFsCompatibleLocation(Location location)
     {
+        String path = location.path().replaceAll("^/+", ""); // remove leading slashes
         if ("s3a".equals(location.scheme().orElseThrow()) || "s3n".equals(location.scheme().orElseThrow())) {
-            String path = SLASHES.matcher(location.path()).replaceAll("/");
-            return Location.of("%s://%s/%s".formatted(location.scheme().orElseThrow(), location.host().orElseThrow(), path));
+            path = SLASHES.matcher(path).replaceAll("/");
         }
-        return location;
+        return Location.of("%s://%s/%s".formatted(location.scheme().orElseThrow(), location.host().orElseThrow(), path));
     }
 }
