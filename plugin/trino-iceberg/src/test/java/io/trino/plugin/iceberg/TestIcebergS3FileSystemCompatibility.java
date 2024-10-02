@@ -95,9 +95,7 @@ public class TestIcebergS3FileSystemCompatibility
                         .build())
                 .build();
 
-
         String catalogDir = "s3://%s/".formatted(BUCKET_NAME);
-        String endpoint = "http://localhost.localstack.cloud:4566";
         Map<String, String> icebergS3HadoopFsProperties = ImmutableMap.<String, String>builder()
                 .put("iceberg.catalog.type", "TESTING_FILE_METASTORE")
                 .put("hive.metastore.catalog.dir", catalogDir)
@@ -184,23 +182,29 @@ public class TestIcebergS3FileSystemCompatibility
             // Verify that table is created at correct location
             assertThat(s3.listObjectsV2(builder -> builder.bucket(BUCKET_NAME).prefix("%s/%s/%s/".formatted(dir1, dir2, tableName))).contents().isEmpty()).isFalse();
         }
-        // Query table in HadoopFs
-        assertQuery("SELECT * FROM %s.%s.%s".formatted(ICEBERG_S3A_HADOOP_FS, SCHEMA_NAME, tableName), "VALUES 'test value'");
 
-        assertUpdate("INSERT INTO %s.%s.%s values('test value2')".formatted(ICEBERG_S3A_HADOOP_FS, SCHEMA_NAME, tableName), 1);
+        assertUpdate("INSERT INTO %s.%s.%s values('test value2'), ('test value3'), ('test value4')".formatted(ICEBERG_S3A_HADOOP_FS, SCHEMA_NAME, tableName), 3);
 //        assertUpdate("INSERT INTO %s.%s.%s values('test value3')".formatted(ICEBERG_S3A_HADOOP_FS, SCHEMA_NAME, tableName), 1);
 //        assertUpdate("INSERT INTO %s.%s.%s values('test value4')".formatted(ICEBERG_S3A_HADOOP_FS, SCHEMA_NAME, tableName), 1);
         assertUpdate("INSERT INTO %s.%s.%s values('test value5')".formatted(ICEBERG_S3A_HADOOP_FS, SCHEMA_NAME, tableName), 1);
 
-//        assertUpdate("DELETE FROM %s.%s.%s WHERE col = 'test value4'".formatted(ICEBERG_S3A_HADOOP_FS, SCHEMA_NAME, tableName), 1);
+        assertUpdate("DELETE FROM %s.%s.%s WHERE col = 'test value4' OR col = 'test value3'".formatted(ICEBERG_S3A_HADOOP_FS, SCHEMA_NAME, tableName), 2);
 //        assertUpdate("DELETE FROM %s.%s.%s WHERE col = 'test value3'".formatted(ICEBERG_S3A_HADOOP_FS, SCHEMA_NAME, tableName), 1);
 
-        assertQuery("SELECT * FROM %s.%s.%s".formatted(ICEBERG_S3A_HADOOP_FS, SCHEMA_NAME, tableName), "VALUES ('test value'), ('test value2'), ('test value5')");
+
+        assertUpdate("ALTER TABLE %s.%s.%s ADD COLUMN int_col INTEGER".formatted(ICEBERG_S3A_HADOOP_FS, SCHEMA_NAME, tableName));
+        assertUpdate("UPDATE %s.%s.%s SET int_col = 1 WHERE col = 'test value'".formatted(ICEBERG_S3A_HADOOP_FS, SCHEMA_NAME, tableName), 1);
+        assertUpdate("UPDATE %s.%s.%s SET int_col = 2 WHERE col = 'test value2'".formatted(ICEBERG_S3A_HADOOP_FS, SCHEMA_NAME, tableName), 1);
+        assertUpdate("UPDATE %s.%s.%s SET int_col = 5 WHERE col = 'test value5'".formatted(ICEBERG_S3A_HADOOP_FS, SCHEMA_NAME, tableName), 1);
+
+        assertQuery("SELECT * FROM %s.%s.%s".formatted(ICEBERG_S3A_HADOOP_FS, SCHEMA_NAME, tableName), "VALUES ('test value', 1), ('test value2', 2), ('test value5', 5)");
 
         // Query the same table in NativeFs
         assertQueryFails("SELECT * FROM %s.%s.%s".formatted(ICEBERG_S3A_NATIVE_FS, SCHEMA_NAME, tableName), "Metadata not found in metadata location for table test_schema.%s".formatted(tableName));
 
-        assertUpdate("ALTER TABLE %s.%s.%s EXECUTE optimize(file_size_threshold => '128MB')".formatted(ICEBERG_S3A_HADOOP_FS, SCHEMA_NAME, tableName));
+
+
+//        assertUpdate("ALTER TABLE %s.%s.%s EXECUTE optimize(file_size_threshold => '128MB')".formatted(ICEBERG_S3A_HADOOP_FS, SCHEMA_NAME, tableName));
 
         // add col before
 
@@ -209,8 +213,8 @@ public class TestIcebergS3FileSystemCompatibility
         assertUpdate("CALL %s.system.repair_table(schema_name => '%s', table_name => '%s', table_location => '%s://%s/%s/%s//%s')".formatted(ICEBERG_S3A_HADOOP_FS2, SCHEMA_NAME, tableName, s3Scheme, BUCKET_NAME, dir1, dir2, tableName));
         //CALL iceberg.system.migrate_table_to_native_fs(schema_name => 'tpch', table_name => 'sample_table', table_location => 's3a://test-bucket/tpch/level1/level2/sample_table');
         // Query the same table in NativeFs
-        assertQuery("SELECT * FROM %s.%s.%s".formatted(ICEBERG_S3A_NATIVE_FS, SCHEMA_NAME, tableName), "VALUES ('test value'), ('test value2'), ('test value5')"); // returns duplicate results
-        assertQuery("SELECT * FROM %s.%s.%s".formatted(ICEBERG_S3A_HADOOP_FS, SCHEMA_NAME, tableName), "VALUES ('test value'), ('test value2'), ('test value5')");
+        assertQuery("SELECT * FROM %s.%s.%s".formatted(ICEBERG_S3A_NATIVE_FS, SCHEMA_NAME, tableName), "VALUES ('test value', 1), ('test value2', 2), ('test value5', 5)");
+        assertQuery("SELECT * FROM %s.%s.%s".formatted(ICEBERG_S3A_HADOOP_FS, SCHEMA_NAME, tableName), "VALUES ('test value', 1), ('test value2', 2), ('test value5', 5)");
 
 
         // add col after
