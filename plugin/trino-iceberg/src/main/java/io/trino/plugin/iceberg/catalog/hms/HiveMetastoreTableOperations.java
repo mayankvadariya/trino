@@ -55,9 +55,10 @@ public class HiveMetastoreTableOperations
             String database,
             String table,
             Optional<String> owner,
-            Optional<String> location)
+            Optional<String> location,
+            boolean repairTableProcedureEnabled)
     {
-        super(fileIo, metastore, session, database, table, owner, location);
+        super(fileIo, metastore, session, database, table, owner, location, repairTableProcedureEnabled);
         this.thriftMetastore = requireNonNull(thriftMetastore, "thriftMetastore is null");
     }
 

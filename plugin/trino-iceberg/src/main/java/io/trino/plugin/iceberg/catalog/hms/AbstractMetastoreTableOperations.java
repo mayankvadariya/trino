@@ -61,9 +61,10 @@ public abstract class AbstractMetastoreTableOperations
             String database,
             String table,
             Optional<String> owner,
-            Optional<String> location)
+            Optional<String> location,
+            boolean repairTableProcedureEnabled)
     {
-        super(fileIo, session, database, table, owner, location);
+        super(fileIo, session, database, table, owner, location, repairTableProcedureEnabled);
         this.metastore = requireNonNull(metastore, "metastore is null");
     }
 

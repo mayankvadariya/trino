@@ -48,6 +48,7 @@ public class TrinoHiveCatalogFactory
     private final boolean isUsingSystemSecurity;
     private final boolean deleteSchemaLocationsFallback;
     private final boolean hideMaterializedViewStorageTable;
+    private final boolean repairTableProcedureEnabled;
 
     @Inject
     public TrinoHiveCatalogFactory(
@@ -70,6 +71,7 @@ public class TrinoHiveCatalogFactory
         this.isUsingSystemSecurity = securityConfig.getSecuritySystem() == SYSTEM;
         this.deleteSchemaLocationsFallback = config.isDeleteSchemaLocationsFallback();
         this.hideMaterializedViewStorageTable = config.isHideMaterializedViewStorageTable();
+        this.repairTableProcedureEnabled = config.isRepairTableProcedureEnabled();
     }
 
     @Override
@@ -86,6 +88,7 @@ public class TrinoHiveCatalogFactory
                 isUniqueTableLocation,
                 isUsingSystemSecurity,
                 deleteSchemaLocationsFallback,
-                hideMaterializedViewStorageTable);
+                hideMaterializedViewStorageTable,
+                repairTableProcedureEnabled);
     }
 }

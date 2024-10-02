@@ -67,6 +67,7 @@ public class IcebergConfig
     private boolean collectExtendedStatisticsOnWrite = true;
     private boolean projectionPushdownEnabled = true;
     private boolean registerTableProcedureEnabled;
+    private boolean repairTableProcedureEnabled;
     private Optional<String> hiveCatalogName = Optional.empty();
     private int formatVersion = FORMAT_VERSION_SUPPORT_MAX;
     private Duration expireSnapshotsMinRetention = new Duration(7, DAYS);
@@ -252,6 +253,19 @@ public class IcebergConfig
     public IcebergConfig setRegisterTableProcedureEnabled(boolean registerTableProcedureEnabled)
     {
         this.registerTableProcedureEnabled = registerTableProcedureEnabled;
+        return this;
+    }
+
+    public boolean isRepairTableProcedureEnabled()
+    {
+        return repairTableProcedureEnabled;
+    }
+
+    @Config("iceberg.repair-table-procedure.enabled")
+    @ConfigDescription("Allow users to call the repair_table procedure")
+    public IcebergConfig setRepairTableProcedureEnabled(boolean repairTableProcedureEnabled)
+    {
+        this.repairTableProcedureEnabled = repairTableProcedureEnabled;
         return this;
     }
 

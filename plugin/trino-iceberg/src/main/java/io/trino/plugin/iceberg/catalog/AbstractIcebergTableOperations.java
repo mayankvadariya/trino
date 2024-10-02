@@ -34,6 +34,7 @@ import org.apache.iceberg.io.LocationProvider;
 import org.apache.iceberg.io.OutputFile;
 import org.apache.iceberg.types.Types.NestedField;
 
+import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +42,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
@@ -86,6 +88,7 @@ public abstract class AbstractIcebergTableOperations
     protected String currentMetadataLocation;
     protected boolean shouldRefresh = true;
     protected OptionalInt version = OptionalInt.empty();
+    protected final boolean repairTableProcedureEnabled;
 
     protected AbstractIcebergTableOperations(
             FileIO fileIo,
@@ -93,7 +96,8 @@ public abstract class AbstractIcebergTableOperations
             String database,
             String table,
             Optional<String> owner,
-            Optional<String> location)
+            Optional<String> location,
+            boolean repairTableProcedureEnabled)
     {
         this.fileIo = requireNonNull(fileIo, "fileIo is null");
         this.session = requireNonNull(session, "session is null");
@@ -101,6 +105,7 @@ public abstract class AbstractIcebergTableOperations
         this.tableName = requireNonNull(table, "table is null");
         this.owner = requireNonNull(owner, "owner is null");
         this.location = requireNonNull(location, "location is null");
+        this.repairTableProcedureEnabled = repairTableProcedureEnabled;
     }
 
     @Override
@@ -158,6 +163,7 @@ public abstract class AbstractIcebergTableOperations
             return;
         }
 
+        // Somehow inject updated table location here
         if (base == null) {
             if (PROVIDER_PROPERTY_VALUE.equals(metadata.properties().get(PROVIDER_PROPERTY_KEY))) {
                 // Assume this is a table executing migrate procedure
@@ -170,10 +176,27 @@ public abstract class AbstractIcebergTableOperations
             }
         }
         else {
-            commitToExistingTable(base, metadata);
+            if (repairTableProcedureEnabled) {
+                commitToExistingTable(base, metadata.updateLocation(normalizeS3Uri(metadata.location())));
+            }
+            else {
+                commitToExistingTable(base, metadata);
+            }
         }
 
         shouldRefresh = true;
+    }
+
+    private static final Pattern SLASHES = Pattern.compile("/+");
+
+    public static String normalizeS3Uri(String tableLocation)
+    {
+        // Normalize e.g. s3a to s3, so that table can be registered using s3:// location
+        // even if internally it uses s3a:// paths.
+        String normalizedSchema = tableLocation.replaceFirst("^s3[an]://", "s3://");
+        URI uri = URI.create(normalizedSchema);
+        String path = SLASHES.matcher(uri.getPath()).replaceAll("/");
+        return "%s://%s%s".formatted(uri.getScheme(), uri.getHost(), path);
     }
 
     protected abstract String getRefreshedLocation(boolean invalidateCaches);
