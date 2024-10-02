@@ -134,7 +134,8 @@ public class TestTrinoHiveCatalogWithHiveMetastore
                 useUniqueTableLocations,
                 false,
                 false,
-                new IcebergConfig().isHideMaterializedViewStorageTable());
+                new IcebergConfig().isHideMaterializedViewStorageTable(),
+                false);
     }
 
     @Override

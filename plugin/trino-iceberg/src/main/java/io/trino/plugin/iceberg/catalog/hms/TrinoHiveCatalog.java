@@ -139,6 +139,7 @@ public class TrinoHiveCatalog
     private final boolean deleteSchemaLocationsFallback;
     private final boolean hideMaterializedViewStorageTable;
 
+    private final boolean repairTableProcedureEnabled;
     private final Cache<SchemaTableName, TableMetadata> tableMetadataCache = EvictableCacheBuilder.newBuilder()
             .maximumSize(PER_QUERY_CACHE_SIZE)
             .build();
@@ -153,7 +154,8 @@ public class TrinoHiveCatalog
             boolean useUniqueTableLocation,
             boolean isUsingSystemSecurity,
             boolean deleteSchemaLocationsFallback,
-            boolean hideMaterializedViewStorageTable)
+            boolean hideMaterializedViewStorageTable,
+            boolean repairTableProcedureEnabled)
     {
         super(catalogName, typeManager, tableOperationsProvider, fileSystemFactory, useUniqueTableLocation);
         this.metastore = requireNonNull(metastore, "metastore is null");
@@ -162,6 +164,7 @@ public class TrinoHiveCatalog
         this.isUsingSystemSecurity = isUsingSystemSecurity;
         this.deleteSchemaLocationsFallback = deleteSchemaLocationsFallback;
         this.hideMaterializedViewStorageTable = hideMaterializedViewStorageTable;
+        this.repairTableProcedureEnabled = repairTableProcedureEnabled;
     }
 
     public CachingHiveMetastore getMetastore()
@@ -180,6 +183,11 @@ public class TrinoHiveCatalog
             return false;
         }
         return metastore.getDatabase(namespace).isPresent();
+    }
+
+    @Override
+    public boolean isRepairTableProcedureEnabled() {
+        return repairTableProcedureEnabled;
     }
 
     @Override
@@ -440,7 +448,7 @@ public class TrinoHiveCatalog
     @Override
     public Table loadTable(ConnectorSession session, SchemaTableName schemaTableName)
     {
-        TableMetadata metadata;
+        TableMetadata metadata;//
         try {
             metadata = uncheckedCacheGet(
                     tableMetadataCache,

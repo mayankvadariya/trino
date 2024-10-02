@@ -1760,12 +1760,12 @@ public class IcebergMetadata
         RewriteFiles rewriteFiles = transaction.newRewrite();
         scannedDataFiles.forEach(rewriteFiles::deleteFile);
         fullyAppliedDeleteFiles.forEach(rewriteFiles::deleteFile);
-        newFiles.forEach(rewriteFiles::addFile);
+        newFiles.forEach(rewriteFiles::addFile); //
 
         // Table.snapshot method returns null if there is no matching snapshot
         Snapshot snapshot = requireNonNull(icebergTable.snapshot(optimizeHandle.snapshotId().get()), "snapshot is null");
         rewriteFiles.validateFromSnapshot(snapshot.snapshotId());
-        commitUpdateAndTransaction(rewriteFiles, session, transaction, "optimize");
+        commitUpdateAndTransaction(rewriteFiles, session, transaction, "optimize"); //
 
         // TODO (https://github.com/trinodb/trino/issues/15439) this may not exactly be the snapshot we committed, if there is another writer
         long newSnapshotId = transaction.table().currentSnapshot().snapshotId();
@@ -1793,7 +1793,7 @@ public class IcebergMetadata
         transaction = null;
     }
 
-    private static void commitUpdateAndTransaction(SnapshotUpdate<?> update, ConnectorSession session, Transaction transaction, String operation)
+    public static void commitUpdateAndTransaction(SnapshotUpdate<?> update, ConnectorSession session, Transaction transaction, String operation)
     {
         try {
             commit(update, session);
@@ -1994,7 +1994,7 @@ public class IcebergMetadata
 
         metadataFileLocations(table, false).stream()
                 .map(IcebergUtil::fileName)
-                .forEach(validMetadataFileNames::add);
+                .forEach(validMetadataFileNames::add);//
 
         statisticsFilesLocations(table).stream()
                 .map(IcebergUtil::fileName)

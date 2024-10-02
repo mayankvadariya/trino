@@ -54,6 +54,7 @@ import io.trino.spi.connector.TableProcedureMetadata;
 import io.trino.spi.function.FunctionProvider;
 import io.trino.spi.function.table.ConnectorTableFunction;
 import io.trino.spi.procedure.Procedure;
+import org.apache.iceberg.RepairLegacyFileSystemTableProcedure;
 
 import java.util.concurrent.ExecutorService;
 
@@ -111,6 +112,7 @@ public class IcebergModule
         procedures.addBinding().toProvider(RollbackToSnapshotProcedure.class).in(Scopes.SINGLETON);
         procedures.addBinding().toProvider(RegisterTableProcedure.class).in(Scopes.SINGLETON);
         procedures.addBinding().toProvider(UnregisterTableProcedure.class).in(Scopes.SINGLETON);
+        procedures.addBinding().toProvider(RepairLegacyFileSystemTableProcedure.class).in(Scopes.SINGLETON);
 
         Multibinder<TableProcedureMetadata> tableProcedures = newSetBinder(binder, TableProcedureMetadata.class);
         tableProcedures.addBinding().toProvider(OptimizeTableProcedure.class).in(Scopes.SINGLETON);

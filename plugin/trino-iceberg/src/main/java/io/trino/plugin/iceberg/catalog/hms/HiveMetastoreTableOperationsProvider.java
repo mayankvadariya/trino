@@ -56,6 +56,7 @@ public class HiveMetastoreTableOperationsProvider
                 database,
                 table,
                 owner,
-                location);
+                location,
+                catalog.isRepairTableProcedureEnabled());
     }
 }

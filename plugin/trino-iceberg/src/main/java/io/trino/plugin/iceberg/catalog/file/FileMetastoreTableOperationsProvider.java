@@ -53,6 +53,7 @@ public class FileMetastoreTableOperationsProvider
                 database,
                 table,
                 owner,
-                location);
+                location,
+                catalog.isRepairTableProcedureEnabled());
     }
 }

@@ -60,6 +60,11 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
  */
 public interface TrinoCatalog
 {
+    default boolean isRepairTableProcedureEnabled()
+    {
+        return false;
+    }
+
     boolean namespaceExists(ConnectorSession session, String namespace);
 
     List<String> listNamespaces(ConnectorSession session);
