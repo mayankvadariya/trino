@@ -37,6 +37,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.trino.plugin.base.util.Procedures.checkProcedureArgument;
@@ -163,7 +164,6 @@ public class RepairLegacyFileSystemTableProcedure
         FileIO fileIo = operations.io();
 
         List<ManifestFile> manifestFiles = table.currentSnapshot().allManifests(fileIo);
-        manifestFiles.getFirst().copy().path();
 
         Transaction transaction = catalog.newTransaction(table);
         RewriteFiles rewriteFiles = transaction.newRewrite();
@@ -194,27 +194,70 @@ public class RepairLegacyFileSystemTableProcedure
                             .filter(partitionSpec -> updatedManifestFile.partitionSpecId() == partitionSpec.specId())
                             .collect(toImmutableList());
 
-                    ImmutableList.Builder<DataFile> newDataFiles = ImmutableList.builder();
-                    ImmutableList.Builder<DataFile> newDataDeleteFiles = ImmutableList.builder(); // can't be empty otherwise something fails
+                    if(manifestFile.content() == ManifestContent.DATA) {
+//                        DataFile newDataFiles = ImmutableList.builder();
+//                        DataFile newDataDeleteFiles = ImmutableList.builder(); // can't be empty otherwise something fails
 
-                    ManifestReader<DataFile> reader = ManifestFiles.read(updatedManifestFile, operations.io());
-                    reader.liveEntries().forEach(
-                        file -> {
-                            DataFile dataFile = file.file();
-                            String updatedPath = normalizeS3Uri(dataFile.path().toString());
-                            DataFiles.Builder builder = DataFiles.builder(partitionSpecs.getFirst())
-                                    .copy(dataFile)
-                                    .withPath(updatedPath);
-                            newDataFiles.add(builder.build());
-                            newDataDeleteFiles.add(dataFile.copy());
-                            System.out.println();
-                        });
+                        ManifestReader<DataFile> reader = ManifestFiles.read(updatedManifestFile, operations.io());
+                        reader.liveEntries().forEach(
+                                file -> {
+                                    DataFile dataFile = file.file();
+                                    String updatedPath = normalizeS3Uri(dataFile.path().toString());
+                                    DataFiles.Builder builder = DataFiles.builder(partitionSpecs.getFirst())
+                                            .copy(dataFile)
+                                            .withPath(updatedPath);
+//                                    newDataFiles.add(builder.build());
+//                                    newDataDeleteFiles.add(dataFile.copy());
+                                    rewriteFiles.deleteFile(dataFile.copy());
+                                    rewriteFiles.addFile(builder.build());
+                                });
 
-                    rewriteFiles.rewriteFiles(new HashSet<>(newDataDeleteFiles.build()), new HashSet<>(newDataFiles.build()));
+//                        rewriteFiles.rewriteFiles(new HashSet<>(newDataDeleteFiles.build()), new HashSet<>(newDataFiles.build()));
+                    }
+//                    else if (manifestFile.content() == ManifestContent.DELETES) {
+////                        ImmutableList.Builder<DeleteFile> newDeleteFiles = ImmutableList.builder();
+////                        ImmutableList.Builder<DeleteFile> newDeleteDeleteFiles = ImmutableList.builder(); // can't be empty otherwise something fails
+//
+//                        ManifestReader<DeleteFile> reader = ManifestFiles.readDeleteManifest(updatedManifestFile, operations.io(), table.specs());
+//                        reader.entries().forEach(
+//                                file -> {
+//                                    DeleteFile deleteFile = file.file();
+//                                    String updatedPath = normalizeS3Uri(deleteFile.path().toString());
+//                                    DeleteFile updatedDeleteFile =
+//                                            new GenericDeleteFile(
+//                                                    deleteFile.specId(),
+//                                                    deleteFile.content(),
+//                                                    updatedPath,
+//                                                    deleteFile.format(),
+//                                                    (PartitionData) deleteFile.partition(),
+//                                                    deleteFile.fileSizeInBytes(),
+//                                                    new Metrics(deleteFile.recordCount(),
+//                                                            deleteFile.columnSizes(),
+//                                                            deleteFile.valueCounts(),
+//                                                            deleteFile.nullValueCounts(),
+//                                                            deleteFile.nanValueCounts(),
+//                                                            deleteFile.lowerBounds(),
+//                                                            deleteFile.upperBounds()),
+//                                                    deleteFile.equalityFieldIds() == null ? null : deleteFile.equalityFieldIds().stream().mapToInt(i -> i).toArray(),
+//                                                    deleteFile.sortOrderId(),
+//                                                    deleteFile.splitOffsets(),
+//                                                    deleteFile.keyMetadata()
+//                                            );
+////                                    newDeleteFiles.add(updatedDeleteFile);
+////                                    newDeleteDeleteFiles.add(deleteFile.copy());
+//
+//                                    rewriteFiles.deleteFile(deleteFile.copy());
+//                                    rewriteFiles.addFile(updatedDeleteFile);
+//                                });
+//
+////                        rewriteFiles.rewriteFiles(new HashSet<>(newDeleteDeleteFiles.build()), new HashSet<>(newDeleteFiles.build()));
+////                        rewriteFiles.rewriteFiles(new HashSet<>(newDeleteDeleteFiles.build()), new HashSet<>(newDeleteFiles.build()));
+//                    }
                 }
         );
         commitUpdateAndTransaction(rewriteFiles, clientSession, transaction, "migrate_from_hadoop_fs_to_native_fs");
 
+        //
         RewriteManifests rewriteManifests = transaction.rewriteManifests();
         List<ManifestFile> manifests = table.currentSnapshot().allManifests(table.io());
         manifests.forEach(

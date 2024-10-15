@@ -101,6 +101,7 @@ public class TestIcebergS3FileSystemCompatibility
                 .put("hive.metastore.catalog.dir", catalogDir)
                 .put("hive.s3.aws-access-key", ACCESS_KEY)
                 .put("hive.s3.aws-secret-key", SECRET_KEY)
+                .put("iceberg.expire_snapshots.min-retention", "0s")
                 .put("hive.s3.endpoint", LOCALSTACK.getEndpointOverride(LocalStackContainer.Service.S3).toString())
                 .put("hive.s3.region", Region.of(LOCALSTACK.getRegion()).toString())
                 .put("fs.hadoop.enabled", "true")
@@ -202,9 +203,9 @@ public class TestIcebergS3FileSystemCompatibility
         // Query the same table in NativeFs
         assertQueryFails("SELECT * FROM %s.%s.%s".formatted(ICEBERG_S3A_NATIVE_FS, SCHEMA_NAME, tableName), "Metadata not found in metadata location for table test_schema.%s".formatted(tableName));
 
-
-
-//        assertUpdate("ALTER TABLE %s.%s.%s EXECUTE optimize(file_size_threshold => '128MB')".formatted(ICEBERG_S3A_HADOOP_FS, SCHEMA_NAME, tableName));
+        assertUpdate("ALTER TABLE %s.%s.%s EXECUTE optimize(file_size_threshold => '128MB')".formatted(ICEBERG_S3A_HADOOP_FS, SCHEMA_NAME, tableName));
+        assertUpdate("ALTER TABLE %s.%s.%s EXECUTE expire_snapshots(retention_threshold => '0s')".formatted(ICEBERG_S3A_HADOOP_FS, SCHEMA_NAME, tableName));
+        assertUpdate("ALTER TABLE %s.%s.%s EXECUTE remove_orphan_files(retention_threshold => '7d')".formatted(ICEBERG_S3A_HADOOP_FS, SCHEMA_NAME, tableName));
 
         // add col before
 
