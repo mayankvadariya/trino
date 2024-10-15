@@ -94,6 +94,7 @@ public class TestIcebergS3FileSystemCompatibility
                         .setSchema(SCHEMA_NAME)
                         .build())
                 .build();
+        System.out.println("Localstack endpoint is " + LOCALSTACK.getEndpointOverride(LocalStackContainer.Service.S3));
 
         String catalogDir = "s3://%s/".formatted(BUCKET_NAME);
         Map<String, String> icebergS3HadoopFsProperties = ImmutableMap.<String, String>builder()
