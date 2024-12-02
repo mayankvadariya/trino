@@ -66,11 +66,11 @@ import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 public class TestTrinoHiveCatalogWithHiveMetastore
         extends BaseTrinoCatalogTest
 {
-    private static final String bucketName = "test-hive-catalog-with-hms-" + randomNameSuffix();
+    protected static final String bucketName = "test-hive-catalog-with-hms-" + randomNameSuffix();
 
-    private AutoCloseableCloser closer = AutoCloseableCloser.create();
+    protected AutoCloseableCloser closer = AutoCloseableCloser.create();
     // Use MinIO for storage, since HDFS is hard to get working in a unit test
-    private HiveMinioDataLake dataLake;
+    protected HiveMinioDataLake dataLake;
 
     @BeforeAll
     public void setUp()
