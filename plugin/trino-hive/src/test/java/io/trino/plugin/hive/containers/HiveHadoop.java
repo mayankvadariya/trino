@@ -33,6 +33,7 @@ public class HiveHadoop
     private static final Logger log = Logger.get(HiveHadoop.class);
 
     public static final String HIVE3_IMAGE = "ghcr.io/trinodb/testing/hdp3.1-hive:" + TestingProperties.getDockerImagesVersion();
+    public static final String HIVE4_IMAGE = "testing/hive4.0-hive:latest";
 
     public static final String HOST_NAME = "hadoop-master";
 

@@ -33,6 +33,7 @@ import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static io.trino.plugin.hive.TestingThriftHiveMetastoreBuilder.testingThriftHiveMetastoreBuilder;
+import static io.trino.plugin.hive.containers.HiveHadoop.HIVE4_IMAGE;
 import static io.trino.testing.containers.Minio.MINIO_ACCESS_KEY;
 import static io.trino.testing.containers.Minio.MINIO_REGION;
 import static io.trino.testing.containers.Minio.MINIO_SECRET_KEY;
@@ -185,5 +186,25 @@ public final class S3HiveQueryRunner
         Logger log = Logger.get(S3HiveQueryRunner.class);
         log.info("======== SERVER STARTED ========");
         log.info("\n====\n%s\n====", queryRunner.getCoordinator().getBaseUrl());
+    }
+
+    public static class S3Hive4QueryRunner
+    {
+        public static void main(String[] args)
+                throws Exception
+        {
+            HiveMinioDataLake hiveMinioDataLake = new HiveMinioDataLake("tpch", HIVE4_IMAGE);
+            hiveMinioDataLake.start();
+
+            QueryRunner queryRunner = S3HiveQueryRunner.builder(hiveMinioDataLake)
+                    .addCoordinatorProperty("http-server.http.port", "8080")
+                    .setHiveProperties(ImmutableMap.of("hive.security", "allow-all"))
+                    .setSkipTimezoneSetup(true)
+                    .setInitialTables(TpchTable.getTables())
+                    .build();
+            Logger log = Logger.get(S3HiveQueryRunner.class);
+            log.info("======== SERVER STARTED ========");
+            log.info("\n====\n%s\n====", queryRunner.getCoordinator().getBaseUrl());
+        }
     }
 }
