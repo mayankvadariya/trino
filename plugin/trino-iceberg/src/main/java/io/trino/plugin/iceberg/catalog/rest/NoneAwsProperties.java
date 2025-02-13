@@ -13,11 +13,22 @@
  */
 package io.trino.plugin.iceberg.catalog.rest;
 
+import com.google.common.collect.ImmutableMap;
+
 import java.util.Map;
 
-public interface AwsProperties
+public class NoneAwsProperties
+        implements AwsProperties
 {
-    Map<String, String> get();
+    @Override
+    public Map<String, String> get()
+    {
+        return ImmutableMap.of();
+    }
 
-    boolean hasIamRoleSessionCredentialsRefreshed();
+    @Override
+    public boolean hasIamRoleSessionCredentialsRefreshed()
+    {
+        return false;
+    }
 }

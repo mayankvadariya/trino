@@ -13,7 +13,6 @@
  */
 package io.trino.plugin.iceberg.catalog.rest;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.inject.Binder;
 import com.google.inject.Scopes;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
@@ -47,7 +46,7 @@ public class IcebergRestCatalogModule
                     configBinder(internalBinder).bindConfig(IcebergRestCatalogSigV4Config.class);
                     internalBinder.bind(AwsProperties.class).to(SigV4AwsProperties.class).in(Scopes.SINGLETON);
                 },
-                internalBinder -> internalBinder.bind(AwsProperties.class).toInstance(ImmutableMap::of)));
+                internalBinder -> internalBinder.bind(AwsProperties.class).toInstance(new NoneAwsProperties())));
 
         binder.bind(TrinoCatalogFactory.class).to(TrinoIcebergRestCatalogFactory.class).in(Scopes.SINGLETON);
         newOptionalBinder(binder, IcebergFileSystemFactory.class).setBinding().to(IcebergRestCatalogFileSystemFactory.class).in(Scopes.SINGLETON);

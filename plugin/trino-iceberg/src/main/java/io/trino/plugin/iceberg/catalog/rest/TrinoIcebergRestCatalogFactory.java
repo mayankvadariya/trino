@@ -112,7 +112,7 @@ public class TrinoIcebergRestCatalogFactory
     {
         // Creation of the RESTSessionCatalog is lazy due to required network calls
         // for authorization and config route
-        if (icebergCatalog == null) {
+        if (icebergCatalog == null || awsProperties.hasIamRoleSessionCredentialsRefreshed()) {
             ImmutableMap.Builder<String, String> properties = ImmutableMap.builder();
             properties.put(CatalogProperties.URI, serverUri.toString());
             warehouse.ifPresent(location -> properties.put(CatalogProperties.WAREHOUSE_LOCATION, location));

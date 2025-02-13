@@ -46,6 +46,9 @@ public class SigV4AwsProperties
     private final Optional<StsAssumeRoleCredentialsProvider> iamRoleCredentialsProvider;
     private final Map<String, String> properties;
 
+    private Optional<AwsSessionCredentials> currentAwsSessionCredentials = Optional.empty();
+    private boolean hasIamRoleSessionCredentialsRefreshed;
+
     @Inject
     public SigV4AwsProperties(IcebergSecurityConfig securityConfig, IcebergRestCatalogSigV4Config sigV4Config, S3FileSystemConfig s3Config)
     {
@@ -81,12 +84,25 @@ public class SigV4AwsProperties
     public Map<String, String> get()
     {
         if (iamRoleCredentialsProvider.isPresent()) {
-            AwsSessionCredentials iamRoleCredentials = (AwsSessionCredentials) iamRoleCredentialsProvider.get().resolveCredentials();
-            properties.put(REST_ACCESS_KEY_ID, iamRoleCredentials.accessKeyId());
-            properties.put(REST_SECRET_ACCESS_KEY, iamRoleCredentials.secretAccessKey());
-            properties.put(REST_SESSION_TOKEN, iamRoleCredentials.sessionToken());
+            AwsSessionCredentials newIamRoleSessionCredentials = (AwsSessionCredentials) iamRoleCredentialsProvider.get().resolveCredentials();
+            if (currentAwsSessionCredentials.isEmpty() || !currentAwsSessionCredentials.get().equals(newIamRoleSessionCredentials)) {
+                currentAwsSessionCredentials = Optional.of(newIamRoleSessionCredentials);
+                hasIamRoleSessionCredentialsRefreshed = true;
+            }
+            else {
+                hasIamRoleSessionCredentialsRefreshed = false;
+            }
+            properties.put(REST_ACCESS_KEY_ID, currentAwsSessionCredentials.get().accessKeyId());
+            properties.put(REST_SECRET_ACCESS_KEY, currentAwsSessionCredentials.get().secretAccessKey());
+            properties.put(REST_SESSION_TOKEN, currentAwsSessionCredentials.get().sessionToken());
         }
         return ImmutableMap.copyOf(properties);
+    }
+
+    @Override
+    public boolean hasIamRoleSessionCredentialsRefreshed()
+    {
+        return hasIamRoleSessionCredentialsRefreshed;
     }
 
     private static Optional<AwsCredentialsProvider> createStaticCredentialsProvider(S3FileSystemConfig config)
